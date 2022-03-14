@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+package user;
+option go_package = "/protobuf-user";
+
+message User {
+  string user_id = 1;
+  string user_name = 2;
+  Credentials credentials = 3;
+  string register_date = 4;
+  bool root = 5;
+}
+
+message Credentials {
+  string login = 2;
+  string password = 3;
+}
+
+message SaveUserRequest {
+  User user = 1;
+}
+
+message SaveUserResponse {
+  string user_id = 1;
+  bool saved = 2;
+}
+
+message GetUserRequest {
+  string user_id = 1;
+}
+
+message GetUserResponse {
+  User user = 1;
+  string requested_at = 2;
+}
+
+message DeleteUserRequest {
+  string user_id = 1;
+}
+
+message DeleteUserResponse {
+  bool deleted = 1;
+}
+
+message UpdateUserRequest {
+  User user = 1;
+}
+
+message UpdateUserResponse {
+  bool updated = 1;
+}
+
+service UserService {
+  // Unary service methods
+  rpc SaveUserFunc (SaveUserRequest) returns (SaveUserResponse) {};
+  rpc DeleteUserFunc (DeleteUserRequest) returns (DeleteUserResponse) {};
+  rpc UpdateUserFunc (UpdateUserRequest) returns (UpdateUserResponse) {};
+}
