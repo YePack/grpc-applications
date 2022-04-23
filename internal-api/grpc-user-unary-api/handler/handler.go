@@ -11,8 +11,8 @@ import (
 )
 
 type handler struct {
-	service svc.UnaryService
 	logger  *zap.Logger
+	service svc.UnaryService
 }
 
 func NewUnaryHandler(l *zap.Logger, s svc.UnaryService) *handler {

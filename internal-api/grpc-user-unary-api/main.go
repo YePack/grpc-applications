@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	unaryServiceHost = "127.0.0.1:8080"
+	unaryServiceHost = "127.0.0.1:8081"
 )
 
 func main() {
