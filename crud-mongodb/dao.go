@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
+	m "grpc-applications/model"
 	upb "grpc-applications/protoc/protobuf-user"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -25,9 +27,9 @@ type mongoClient struct {
 }
 
 type MongoDBInterface interface {
-	InsertUser(ctx context.Context, r *upb.SaveUserRequest) error
+	InsertUser(ctx context.Context, user *m.User) error
 	GetUsers(ctx context.Context) ([]*upb.User, error)
-	ReadUser(ctx context.Context, userID string) (*upb.User, error)
+	ReadUser(ctx context.Context, userID string) (*m.User, error)
 	DeleteUser(ctx context.Context, userID string) error
 	UpdateUser(ctx context.Context, r *upb.UpdateUserRequest) error
 }
@@ -53,28 +55,28 @@ func NewMongoConnection(ctx context.Context, logger *zap.Logger, host, port stri
 	}, nil
 }
 
-func (c *mongoClient) InsertUser(ctx context.Context, r *upb.SaveUserRequest) error {
-	c.logger.With(zap.Any("item", r)).Debug("Inserting new user!")
+func (c *mongoClient) InsertUser(ctx context.Context, user *m.User) error {
+	c.logger.With(zap.Any("item", user)).Debug("Inserting new user!")
 
 	collection := c.client.Database(dbName).Collection(usersCollection)
-	if _, err := collection.InsertOne(ctx, r); err != nil {
+	if _, err := collection.InsertOne(ctx, user); err != nil {
 		return err
 	}
 
-	c.logger.With(zap.Any("item", r)).Debug("New user was successfully inserted!")
+	c.logger.With(zap.Any("item", user)).Debug("New user was successfully inserted!")
 	return nil
 }
 
-func (c *mongoClient) ReadUser(ctx context.Context, userID string) (*upb.User, error) {
+func (c *mongoClient) ReadUser(ctx context.Context, userID string) (*m.User, error) {
 	c.logger.With(zap.String("user_id", userID)).Debug("Retrieving data about user with specific ID!")
 
-	var user *upb.User
+	user := &m.User{UserId: userID}
 
 	collection := c.client.Database(dbName).Collection(usersCollection)
-	if err := collection.FindOne(ctx, bson.E{Key: userID}).Decode(&user); err != nil {
+	cur := collection.FindOne(ctx, bson.D{{"userid", userID}})
+	if err := cur.Decode(&user); err != nil {
 		return nil, err
 	}
-
 	c.logger.With(zap.String("user_id", userID)).Debug("User data was successfully parsed!")
 	return user, nil
 }
@@ -110,7 +112,7 @@ func (c *mongoClient) DeleteUser(ctx context.Context, userID string) error {
 	c.logger.With(zap.String("user_id", userID)).Debug("Deleting user with specific ID!")
 
 	collection := c.client.Database(dbName).Collection(usersCollection)
-	res, err := collection.DeleteOne(ctx, bson.M{"user.userid": userID})
+	res, err := collection.DeleteOne(ctx, bson.M{"userid": userID})
 	if err != nil {
 		return err
 	}

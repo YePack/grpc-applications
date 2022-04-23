@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 package user;
-option go_package = "/protobuf-user";
+option go_package = "/protobuf-user;protobuf_user";
 
 message User {
   string user_id = 1;
@@ -29,7 +29,7 @@ message GetUserRequest {
   string user_id = 1;
 }
 
-message GetUserResponse {
+message ReadUserResponse {
   User user = 1;
   string requested_at = 2;
 }
@@ -42,17 +42,21 @@ message DeleteUserResponse {
   bool deleted = 1;
 }
 
+service UserService {
+  // Unary service methods
+  rpc SaveUserFunc (SaveUserRequest) returns (SaveUserResponse) {};
+  rpc DeleteUserFunc (DeleteUserRequest) returns (DeleteUserResponse) {};
+  rpc ReadSpecificUsersFunc (ReadSpecificUsersRequest) returns (stream ReadUserResponse) {}
+}
+
+message ReadSpecificUsersRequest {
+  repeated string user_ids = 1;
+}
+
 message UpdateUserRequest {
   User user = 1;
 }
 
 message UpdateUserResponse {
   bool updated = 1;
-}
-
-service UserService {
-  // Unary service methods
-  rpc SaveUserFunc (SaveUserRequest) returns (SaveUserResponse) {};
-  rpc DeleteUserFunc (DeleteUserRequest) returns (DeleteUserResponse) {};
-  rpc UpdateUserFunc (UpdateUserRequest) returns (UpdateUserResponse) {};
 }

@@ -21,7 +21,7 @@ type UserServiceClient interface {
 	// Unary service methods
 	SaveUserFunc(ctx context.Context, in *SaveUserRequest, opts ...grpc.CallOption) (*SaveUserResponse, error)
 	DeleteUserFunc(ctx context.Context, in *DeleteUserRequest, opts ...grpc.CallOption) (*DeleteUserResponse, error)
-	UpdateUserFunc(ctx context.Context, in *UpdateUserRequest, opts ...grpc.CallOption) (*UpdateUserResponse, error)
+	ReadSpecificUsersFunc(ctx context.Context, in *ReadSpecificUsersRequest, opts ...grpc.CallOption) (UserService_ReadSpecificUsersFuncClient, error)
 }
 
 type userServiceClient struct {
@@ -50,13 +50,36 @@ func (c *userServiceClient) DeleteUserFunc(ctx context.Context, in *DeleteUserRe
 	return out, nil
 }
 
-func (c *userServiceClient) UpdateUserFunc(ctx context.Context, in *UpdateUserRequest, opts ...grpc.CallOption) (*UpdateUserResponse, error) {
-	out := new(UpdateUserResponse)
-	err := c.cc.Invoke(ctx, "/user.UserService/UpdateUserFunc", in, out, opts...)
+func (c *userServiceClient) ReadSpecificUsersFunc(ctx context.Context, in *ReadSpecificUsersRequest, opts ...grpc.CallOption) (UserService_ReadSpecificUsersFuncClient, error) {
+	stream, err := c.cc.NewStream(ctx, &UserService_ServiceDesc.Streams[0], "/user.UserService/ReadSpecificUsersFunc", opts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	x := &userServiceReadSpecificUsersFuncClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type UserService_ReadSpecificUsersFuncClient interface {
+	Recv() (*ReadUserResponse, error)
+	grpc.ClientStream
+}
+
+type userServiceReadSpecificUsersFuncClient struct {
+	grpc.ClientStream
+}
+
+func (x *userServiceReadSpecificUsersFuncClient) Recv() (*ReadUserResponse, error) {
+	m := new(ReadUserResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 // UserServiceServer is the server API for UserService service.
@@ -66,7 +89,7 @@ type UserServiceServer interface {
 	// Unary service methods
 	SaveUserFunc(context.Context, *SaveUserRequest) (*SaveUserResponse, error)
 	DeleteUserFunc(context.Context, *DeleteUserRequest) (*DeleteUserResponse, error)
-	UpdateUserFunc(context.Context, *UpdateUserRequest) (*UpdateUserResponse, error)
+	ReadSpecificUsersFunc(*ReadSpecificUsersRequest, UserService_ReadSpecificUsersFuncServer) error
 }
 
 // UnimplementedUserServiceServer should be embedded to have forward compatible implementations.
@@ -79,8 +102,8 @@ func (UnimplementedUserServiceServer) SaveUserFunc(context.Context, *SaveUserReq
 func (UnimplementedUserServiceServer) DeleteUserFunc(context.Context, *DeleteUserRequest) (*DeleteUserResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteUserFunc not implemented")
 }
-func (UnimplementedUserServiceServer) UpdateUserFunc(context.Context, *UpdateUserRequest) (*UpdateUserResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UpdateUserFunc not implemented")
+func (UnimplementedUserServiceServer) ReadSpecificUsersFunc(*ReadSpecificUsersRequest, UserService_ReadSpecificUsersFuncServer) error {
+	return status.Errorf(codes.Unimplemented, "method ReadSpecificUsersFunc not implemented")
 }
 
 // UnsafeUserServiceServer may be embedded to opt out of forward compatibility for this service.
@@ -130,22 +153,25 @@ func _UserService_DeleteUserFunc_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
-func _UserService_UpdateUserFunc_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UpdateUserRequest)
-	if err := dec(in); err != nil {
-		return nil, err
+func _UserService_ReadSpecificUsersFunc_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(ReadSpecificUsersRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
 	}
-	if interceptor == nil {
-		return srv.(UserServiceServer).UpdateUserFunc(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/user.UserService/UpdateUserFunc",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(UserServiceServer).UpdateUserFunc(ctx, req.(*UpdateUserRequest))
-	}
-	return interceptor(ctx, in, info, handler)
+	return srv.(UserServiceServer).ReadSpecificUsersFunc(m, &userServiceReadSpecificUsersFuncServer{stream})
+}
+
+type UserService_ReadSpecificUsersFuncServer interface {
+	Send(*ReadUserResponse) error
+	grpc.ServerStream
+}
+
+type userServiceReadSpecificUsersFuncServer struct {
+	grpc.ServerStream
+}
+
+func (x *userServiceReadSpecificUsersFuncServer) Send(m *ReadUserResponse) error {
+	return x.ServerStream.SendMsg(m)
 }
 
 // UserService_ServiceDesc is the grpc.ServiceDesc for UserService service.
@@ -163,11 +189,13 @@ var UserService_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "DeleteUserFunc",
 			Handler:    _UserService_DeleteUserFunc_Handler,
 		},
+	},
+	Streams: []grpc.StreamDesc{
 		{
-			MethodName: "UpdateUserFunc",
-			Handler:    _UserService_UpdateUserFunc_Handler,
+			StreamName:    "ReadSpecificUsersFunc",
+			Handler:       _UserService_ReadSpecificUsersFunc_Handler,
+			ServerStreams: true,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
 	Metadata: "models/user/user.proto",
 }
